@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Refer & Earn — Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--muted:#9aa0a6;--accent:#0c63ff}
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui;min-height:100vh;background:linear-gradient(180deg,#060607,#0b0b0d);display:flex;align-items:flex-start;justify-content:center;padding:28px;color:#eaf0ff}
+  .wrap{width:100%;max-width:980px;display:grid;grid-template-columns:1fr 320px;gap:20px}
+  .card{background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.05));padding:22px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+  .profile{display:flex;align-items:center;gap:14px}
+  .avatar{width:64px;height:64px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#0b9bff);display:flex;align-items:center;justify-content:center;font-weight:700}
+  .muted{color:var(--muted)}
+  .btn{background:linear-gradient(180deg,var(--accent),#0a5be6);color:white;padding:10px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
+  .link{color:#9ec1ff;text-decoration:none;font-weight:600}
+  .mini{font-size:13px;color:var(--muted)}
+  .field{margin-top:12px}
+  .divider{height:1px;background:rgba(255,255,255,0.03);margin:12px 0;border-radius:2px}
+  .notice{padding:10px;border-radius:8px;margin-top:10px;background:rgba(0,255,120,0.06);color:#afffb1;font-weight:600}
+  .error{padding:10px;border-radius:8px;margin-top:10px;background:rgba(255,107,107,0.06);color:#ff6b6b;font-weight:600}
+</style>
+</head><body>
+  <div class="wrap">
+    <div class="card" id="mainCard">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="margin:0">Your Account</h2>
+        <div><a href="index.html" class="link">New register</a> · <a href="apply.html" class="link">Apply</a></div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="profile">
+        <div class="avatar" id="avatar">U</div>
+        <div>
+          <div id="userName" style="font-weight:700;font-size:16px">—</div>
+          <div class="mini muted" id="userEmail">—</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="mini muted">Referral Code</label>
+        <div id="refCode" style="font-weight:700;font-size:16px">—</div>
+      </div>
+
+      <div class="field">
+        <label class="mini muted">Coins</label>
+        <div id="coins" style="font-weight:700;font-size:20px">0</div>
+      </div>
+
+      <div class="field">
+        <label class="mini muted">Applied Referral</label>
+        <div id="applied">—</div>
+      </div>
+
+      <div class="field" style="margin-top:16px">
+        <input id="quickCode" placeholder="Referral code to apply" style="padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);width:60%;background:rgba(255,255,255,0.02);color:#eaf0ff"/>
+        <button id="applyBtn" class="btn" style="margin-left:8px">Apply</button>
+      </div>
+
+      <div id="result"></div>
+    </div>
+
+    <aside class="card">
+      <h3 style="margin-top:0">Quick links</h3>
+      <p class="mini muted">Use these during development</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+        <button onclick="logout()" class="btn" style="background:#2b2f34">Sign out</button>
+        <a class="link" href="index.html">Register new user</a>
+        <a class="link" href="login.html">Sign in</a>
+        <a class="link" href="apply.html">Apply referral</a>
+      </div>
+      <div style="margin-top:18px">
+        <small class="muted">Note: this dashboard uses localStorage session stored on register/login. If you used server-only registration without visiting the register page here, use the Apply page with your email.</small>
+      </div>
+    </aside>
+  </div>
+
+<script>
+const API_BASE = 'http://localhost:5000';
+const userEl = JSON.parse(localStorage.getItem('re_user') || 'null');
+const userName = document.getElementById('userName'), userEmail = document.getElementById('userEmail'),
+      refCode = document.getElementById('refCode'), coinsEl = document.getElementById('coins'),
+      appliedEl = document.getElementById('applied'), avatar = document.getElementById('avatar'),
+      result = document.getElementById('result'), applyBtn = document.getElementById('applyBtn'),
+      quickCode = document.getElementById('quickCode');
+
+function renderUser(u){
+  if(!u){ userName.textContent='Guest'; userEmail.textContent='—'; refCode.textContent='—'; coinsEl.textContent='0'; appliedEl.textContent='—'; avatar.textContent='G'; return; }
+  userName.textContent = u.name || u.email || 'User';
+  userEmail.textContent = u.email || '—';
+  refCode.textContent = u.referralCode || '—';
+  coinsEl.textContent = (u.coins||0);
+  appliedEl.textContent = u.appliedReferral || '—';
+  avatar.textContent = (u.name? u.name[0].toUpperCase() : (u.email? u.email[0].toUpperCase() : 'U'));
+}
+renderUser(userEl);
+
+applyBtn.onclick = async () => {
+  result.innerHTML = ''; if(!userEl || !userEl.email){ result.innerHTML = '<div class="error">Sign in or register first (dashboard uses local session)</div>'; return; }
+  const code = quickCode.value.trim(); if(!code){ result.innerHTML = '<div class="error">Enter a referral code</div>'; return; }
+  try{
+    const r = await fetch(API_BASE + '/apply-referral', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userEmail: userEl.email, referralCode: code })});
+    const data = await r.json();
+    if(!r.ok) { result.innerHTML = '<div class="error">'+(data.error||'Apply failed')+'</div>'; }
+    else {
+      // update local session copy
+      const updated = data.user;
+      const newUser = Object.assign({}, userEl, { coins: updated.coins, appliedReferral: updated.appliedReferral });
+      localStorage.setItem('re_user', JSON.stringify(newUser));
+      // update UI
+      renderUser(newUser);
+      result.innerHTML = '<div class="notice">Referral applied! +' + data.reward + ' coins</div>';
+    }
+  }catch(e){ console.error(e); result.innerHTML = '<div class="error">Network error</div>'; }
+};
+
+function logout(){ localStorage.removeItem('re_user'); location.href='login.html'; }
+</script>
+</body></html>

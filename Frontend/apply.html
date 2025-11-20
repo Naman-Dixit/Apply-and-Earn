@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Refer & Earn — Apply Referral</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--accent:#0c63ff;--muted:#9aa0a6}
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui;min-height:100vh;background:linear-gradient(180deg,#060607,#0b0b0d);display:flex;align-items:center;justify-content:center;padding:20px;color:#eaf0ff}
+  .card{width:100%;max-width:520px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.05));padding:28px;border-radius:14px;border:1px solid rgba(255,255,255,0.04)}
+  label{display:block;color:var(--muted);margin-bottom:6px}
+  input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:#eaf0ff;margin-bottom:12px}
+  .btn{width:100%;background:linear-gradient(180deg,var(--accent),#0a5be6);padding:12px;border-radius:10px;border:none;color:white;font-weight:700}
+  .nav{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+  a{color:#9ec1ff;text-decoration:none}
+  .notice{padding:10px;border-radius:8px;margin-top:10px;background:rgba(0,255,120,0.06);color:#afffb1;font-weight:600}
+  .error{padding:10px;border-radius:8px;margin-top:10px;background:rgba(255,107,107,0.06);color:#ff6b6b;font-weight:600}
+</style>
+</head><body>
+  <div class="card">
+    <div class="nav">
+      <a href="index.html">Register</a> · <a href="login.html">Login</a> · <a href="dashboard.html">Dashboard</a>
+    </div>
+    <h2 style="text-align:center;margin:0 0 8px 0">Apply Referral Code</h2>
+    <p style="text-align:center;color:#9aa0a6;margin:0 0 14px 0">Apply a referral code to receive reward coins</p>
+
+    <label>Your email</label>
+    <input id="email" type="email" placeholder="Account email (registered)">
+
+    <label>Referral code</label>
+    <input id="code" type="text" placeholder="Enter referral code">
+
+    <button id="applyBtn" class="btn">Apply Code</button>
+    <div id="result"></div>
+  </div>
+
+<script>
+const API_BASE = 'http://localhost:5000';
+const emailEl = document.getElementById('email'), codeEl = document.getElementById('code'), resDiv = document.getElementById('result');
+
+document.getElementById('applyBtn').onclick = async () => {
+  resDiv.innerHTML = '';
+  const email = emailEl.value.trim(); const code = codeEl.value.trim();
+  if(!email || !code){ resDiv.innerHTML = '<div class="error">Email and referral code are required</div>'; return; }
+  try{
+    const r = await fetch(API_BASE + '/apply-referral', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userEmail: email, referralCode: code }) });
+    const data = await r.json();
+    if(!r.ok){ resDiv.innerHTML = '<div class="error">'+(data.error||'Apply failed')+'</div>'; }
+    else {
+      // update stored user if present
+      const stored = JSON.parse(localStorage.getItem('re_user')||'null');
+      if(stored && stored.email && stored.email.toLowerCase()===email.toLowerCase()){
+        stored.coins = data.user.coins; stored.appliedReferral = data.user.appliedReferral;
+        localStorage.setItem('re_user', JSON.stringify(stored));
+      }
+      resDiv.innerHTML = '<div class="notice">Referral applied! Reward: '+data.reward+' coins. Your coins: '+data.user.coins+'</div>';
+    }
+  }catch(e){ console.error(e); resDiv.innerHTML = '<div class="error">Network error</div>'; }
+};
+</script>
+</body></html>

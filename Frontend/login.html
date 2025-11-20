@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Refer & Earn — Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0b0b0d;--muted:#9aa0a6;--accent:#0c63ff}
+  *{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui;min-height:100vh;background:linear-gradient(180deg,#060607,#0b0b0d);display:flex;align-items:center;justify-content:center;padding:20px;color:#eaf0ff}
+  .card{width:100%;max-width:420px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.05));padding:32px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
+  label{display:block;color:var(--muted);margin-bottom:6px}
+  input{width:100%;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:rgba(255,255,255,0.02);color:#eaf0ff;margin-bottom:14px}
+  .btn{background:linear-gradient(180deg,var(--accent),#0a5be6);color:white;padding:12px;border-radius:10px;border:none;width:100%;font-weight:700}
+  .muted{color:var(--muted);text-align:center;margin-top:12px}
+  .notice{padding:10px;border-radius:8px;margin-top:10px;background:rgba(0,255,120,0.06);color:#afffb1;font-weight:600}
+  .error{padding:10px;border-radius:8px;margin-top:10px;background:rgba(255,107,107,0.06);color:#ff6b6b;font-weight:600}
+  .nav{display:flex;gap:8px;justify-content:center;margin-bottom:12px}
+  .link{color:#9ec1ff;text-decoration:none;font-weight:600}
+</style>
+</head><body>
+  <div class="card">
+    <div class="nav">
+      <a class="link" href="index.html">Register</a> ·
+      <a class="link" href="login.html">Login</a> ·
+      <a class="link" href="apply.html">Apply Code</a> ·
+      <a class="link" href="dashboard.html">Dashboard</a>
+    </div>
+    <h2 style="text-align:center;margin:0 0 10px 0">Sign In</h2>
+    <label>Email</label><input id="email" type="email" placeholder="you@example.com">
+    <label>Password</label><input id="password" type="password" placeholder="password (not validated)">
+    <button id="loginBtn" class="btn">Sign In</button>
+    <div id="result"></div>
+    <p class="muted">Don't have an account? <a href="index.html" class="link">Create one</a></p>
+  </div>
+
+<script>
+const API_BASE = 'http://localhost:5000';
+const btn = document.getElementById('loginBtn'), result = document.getElementById('result');
+btn.onclick = async () => {
+  result.innerHTML = '';
+  const email = document.getElementById('email').value.trim();
+  if(!email){ result.innerHTML = '<div class="error">Enter email</div>'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in...';
+
+  // Try to fetch user from backend (if /all-users exists) else fallback to stored user
+  try{
+    let user = null;
+    try{
+      const r = await fetch(API_BASE + '/all-users');
+      if(r.ok){
+        const arr = await r.json();
+        user = arr.find(u => u.email.toLowerCase() === email.toLowerCase());
+      }
+    }catch(e){ /* ignore */ }
+
+    if(!user){
+      // fallback: check localStorage
+      const stored = JSON.parse(localStorage.getItem('re_user') || 'null');
+      if(stored && stored.email && stored.email.toLowerCase() === email.toLowerCase()) user = stored;
+    }
+
+    if(!user){
+      result.innerHTML = '<div class="error">User not found locally. Register first or enable /all-users on the backend.</div>';
+    } else {
+      // store session
+      localStorage.setItem('re_user', JSON.stringify(user));
+      result.innerHTML = '<div class="notice">Signed in. Redirecting to dashboard...</div>';
+      setTimeout(()=> location.href='dashboard.html',700);
+    }
+  }catch(e){
+    console.error(e);
+    result.innerHTML = '<div class="error">Network error</div>';
+  } finally { btn.disabled = false; btn.textContent = 'Sign In'; }
+};
+</script>
+</body></html>
