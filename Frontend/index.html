@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Refer & Earn — Register</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0b0b0d;
+        --muted: #9aa0a6;
+        --accent: #0c63ff;
+        --radius: 12px;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system;
+        min-height: 100vh;
+        background: linear-gradient(180deg, #060607, #0b0b0d);
+        color: #eaf0ff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .card {
+        width: 100%;
+        max-width: 520px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.03),
+          rgba(0, 0, 0, 0.05)
+        );
+        padding: 32px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 22px;
+      }
+      .header h1 {
+        margin: 0;
+        font-size: 22px;
+      }
+      .header p {
+        margin: 6px 0 0;
+        color: var(--muted);
+      }
+      label {
+        display: block;
+        color: var(--muted);
+        font-size: 13px;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.02);
+        color: #eaf0ff;
+        margin-bottom: 14px;
+        font-size: 15px;
+      }
+      input:focus {
+        outline: none;
+        box-shadow: 0 0 0 4px rgba(12, 99, 255, 0.12);
+        border-color: var(--accent);
+      }
+      .row {
+        display: flex;
+        gap: 12px;
+      }
+      .btn {
+        background: linear-gradient(180deg, var(--accent), #0a5be6);
+        color: white;
+        padding: 12px 14px;
+        border-radius: 10px;
+        border: none;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+        margin-top: 12px;
+      }
+      .notice {
+        padding: 10px;
+        border-radius: 8px;
+        margin-top: 10px;
+        background: rgba(0, 255, 120, 0.06);
+        color: #afffb1;
+        font-weight: 600;
+      }
+      .error {
+        padding: 10px;
+        border-radius: 8px;
+        margin-top: 10px;
+        background: rgba(255, 107, 107, 0.06);
+        color: #ff6b6b;
+        font-weight: 600;
+      }
+      .nav {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-bottom: 12px;
+      }
+      .link {
+        color: #9ec1ff;
+        text-decoration: none;
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="nav">
+        <a class="link" href="index.html">Register</a> ·
+        <a class="link" href="login.html">Login</a> ·
+        <a class="link" href="apply.html">Apply Code</a> ·
+        <a class="link" href="dashboard.html">Dashboard</a>
+      </div>
+
+      <div class="header">
+        <h1>Create Account</h1>
+        <p>Join and start earning rewards</p>
+      </div>
+
+      <label for="name">Full Name</label>
+      <input id="name" type="text" placeholder="Your full name" />
+
+      <label for="email">Email</label>
+      <input id="email" type="email" placeholder="you@example.com" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" placeholder="Choose a password" />
+
+      <button id="registerBtn" class="btn">Create Account</button>
+
+      <div id="result"></div>
+
+      <p class="muted">
+        Already registered? <a href="login.html" class="link">Sign in</a>
+      </p>
+    </div>
+
+    <script>
+      const API_BASE = "http://localhost:5000"; // change if needed
+
+      const nameEl = document.getElementById("name");
+      const emailEl = document.getElementById("email");
+      const passEl = document.getElementById("password");
+      const btn = document.getElementById("registerBtn");
+      const result = document.getElementById("result");
+
+      function show(msg, isErr = false) {
+        result.innerHTML =
+          '<div class="' + (isErr ? "error" : "notice") + '">' + msg + "</div>";
+      }
+
+      btn.onclick = async () => {
+        result.innerHTML = "";
+        const name = nameEl.value.trim(),
+          email = emailEl.value.trim(),
+          password = passEl.value;
+        if (!name || !email || !password) {
+          show("All fields are required", true);
+          return;
+        }
+        btn.disabled = true;
+        btn.textContent = "Creating...";
+        try {
+          const res = await fetch(API_BASE + "/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, email, password }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            show(data.error || "Registration failed", true);
+          } else {
+            // store simple session info in localStorage
+            localStorage.setItem("re_user", JSON.stringify(data.user));
+            show(
+              "Account created — referral code: " +
+                (data.user?.referralCode || "—")
+            );
+            // redirect to dashboard after short delay
+            setTimeout(() => (location.href = "dashboard.html"), 900);
+          }
+        } catch (e) {
+          console.error(e);
+          show("Network error — is the backend running?", true);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "Create Account";
+        }
+      };
+    </script>
+  </body>
+</html>
