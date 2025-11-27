@@ -56,7 +56,7 @@ Create .env from .env.example and configure:
 
 PORT=5000
 NODE_ENV=development
-MONGO_URI=mongodb+srv://refer_earn_user:YOUR_PASSWORD@cluster0.xxxxx.mongodb.net/referearn?retryWrites=true&w=majority
+MONGO_URI=<Link>
 REWARD_COINS=50
 
 
